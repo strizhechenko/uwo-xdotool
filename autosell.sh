@@ -7,8 +7,13 @@ declare TARGET="${TARGET:-640000}"
 declare PORTION="${PORTION:-}"
 declare COST="${COST:-388}"
 
-if [ -z "$PORTION" -a -n "${PRICE:-}" -a -n "${COST:-}" ]; then
-	PORTION="$((TARGET / (PRICE-COST) + 1))"
+if [ -z "$PORTION" ]; then
+	if [ -n "${PRICE:-}" -a -n "${COST:-}" ]; then
+		PORTION="$((TARGET / (PRICE-COST) + 1))"
+	else
+		echo "Failure: pass env. variable PRICE=$RANDOM $0"
+		exit 1
+	fi
 fi
 
 declare WINDOW_ID
@@ -18,9 +23,15 @@ declare GOOD_BUTTON="100 130"
 declare OK_BUTTON="660 420"
 
 find_window() {
+	local recursive="${1:-0}"
 	local rdp_title="FreeRDP:"
 	local rdp_window_id="$(xdotool search --name "$rdp_title")"
 	WINDOW_ID=$rdp_window_id
+	if [ -z "${WINDOW_ID:-}" -a "$recursive" = '0' -a -f ~/bin/myrdp ]; then
+		setsid ~/bin/myrdp & disown -a
+		sleep 10
+		find_window 1
+	fi
 	return 0
 }
 
