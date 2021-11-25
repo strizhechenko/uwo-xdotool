@@ -2,6 +2,7 @@
 
 set -euE
 
+declare SLEEP="${SLEEP:-1}"
 declare AMOUNT="${AMOUNT:-2990}"
 declare TARGET="${TARGET:-640000}"
 declare PORTION="${PORTION:-}"
@@ -29,9 +30,14 @@ find_window() {
 	WINDOW_ID=$rdp_window_id
 	if [ -z "${WINDOW_ID:-}" -a "$recursive" = '0' -a -f ~/bin/myrdp ]; then
 		setsid ~/bin/myrdp & disown -a
-		sleep 10
+		_sleep 10
 		find_window 1
 	fi
+	return 0
+}
+
+_sleep() {
+	sleep $(bc <<< "$SLEEP * $1")
 	return 0
 }
 
@@ -48,7 +54,7 @@ move() {
 
 click_at() {
 	move "$1" "$2"
-	sleep 0.1
+	_sleep 0.1
 	shift 2
 	click "${@:-1}"
 	return 0
@@ -56,24 +62,23 @@ click_at() {
 
 write() {
         xdotool type --window="$WINDOW_ID" "$1"
-        sleep 0.1
+        _sleep 0.1
         xdotool key --window="$WINDOW_ID" "KP_Enter"
-        sleep 0.5
+        _sleep 0.5
         return 0
 }
 
-# TODO: sleep scaling, usleep / $(())
 _main() {
 	click_at $MARKET_KEEPER --repeat 2 --delay 500 1
-	sleep 0.5
+	_sleep 0.5
 	xdotool mousemove_relative $SELL_BUTTON_OFFSET
-	sleep 0.1
+	_sleep 0.1
 	click
-	sleep 1
+	_sleep 1
 	click_at $GOOD_BUTTON
 	write "$PORTION"
 	click_at $OK_BUTTON
-	sleep 0.5
+	_sleep 0.4
 	return 0
 }
 
@@ -81,9 +86,9 @@ main() {
 	local attempts
 	find_window
 	xdotool windowactivate "$WINDOW_ID"
-	sleep 0.1
+	_sleep 0.1
 	xdotool key Escape
-	sleep 0.1
+	_sleep 0.1
 	xdotool key Escape
 	while [[ "$((AMOUNT/PORTION))" -gt 0 ]]; do
 		attempts="$((AMOUNT/PORTION))"
